@@ -41,29 +41,29 @@
                         </td>
                         <td>
                             <span class="badge bg-purple-subtle text-purple border rounded-pill px-3 py-2" style="background-color: #f5f3ff; color: #8b5cf6; border-color: #ddd6fe;">
-                                {{ izin.get_tipe_izin_display }}
+                                {{ izin.get_tipu_lisensa_display }}
                             </span>
                         </td>
                         <td>
-                            <div class="small fw-semibold text-dark">{{ izin.tanggal_mulai|date:"d/m/Y" }}</div>
+                            <div class="small fw-semibold text-dark">{{ izin.data_hahu|date:"d/m/Y" }}</div>
                             <i class="fas fa-long-arrow-alt-down text-muted d-block small ms-2 my-1"></i>
-                            <div class="small fw-semibold text-dark">{{ izin.tanggal_selesai|date:"d/m/Y" }}</div>
+                            <div class="small fw-semibold text-dark">{{ izin.data_remata|date:"d/m/Y" }}</div>
                         </td>
                         <td>
-                            {% if izin.file_bukti %}
-                            <a href="{{ izin.file_bukti.url }}" target="_blank">
-                                <img src="{{ izin.file_bukti.url }}" alt="Bukti" class="rounded-3 border" width="60" height="40" style="object-fit: cover;">
+                            {% if izin.file_evidensia %}
+                            <a href="{{ izin.file_evidensia.url }}" target="_blank">
+                                <img src="{{ izin.file_evidensia.url }}" alt="Bukti" class="rounded-3 border" width="60" height="40" style="object-fit: cover;">
                             </a>
                             {% else %}
                             <span class="text-muted small">La iha foto</span>
                             {% endif %}
                         </td>
                         <td>
-                            {% if izin.status_pengajuan == 'menunggu' %}
+                            {% if izin.estadu_pedidu == 'hein' %}
                             <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2 rounded-pill">
                                 <i class="fas fa-clock me-1"></i> Hein Desizaun
                             </span>
-                            {% elif izin.status_pengajuan == 'disetujui' %}
+                            {% elif izin.estadu_pedidu == 'aprova' %}
                             <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
                                 <i class="fas fa-check-circle me-1"></i> Aprova ona
                             </span>
@@ -74,7 +74,7 @@
                             {% endif %}
                         </td>
                         <td class="pe-4 text-end">
-                            {% if izin.status_pengajuan == 'menunggu' %}
+                            {% if izin.estadu_pedidu == 'hein' %}
                             <div class="d-flex gap-2 justify-content-end">
                                 <a href="{% url 'dashboard_izin_action' izin.id 'approve' %}" class="btn btn-success btn-sm px-3 rounded-pill fw-bold" onclick="return confirm('Ita boot certu katak atu APROVA pedidu ida ne\'e?')">
                                     Aprova

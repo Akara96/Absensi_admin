@@ -77,7 +77,7 @@ class PresensaInputSerializer(serializers.Serializer):
     latitude = serializers.FloatField()
     longitude = serializers.FloatField()
     distansia_metru = serializers.FloatField()
-    tipe_absen = serializers.CharField(max_length=100)
+    tipu_absensi = serializers.CharField(max_length=100)
 
 
 class KonfigurasaunSistemaSerializer(serializers.ModelSerializer):
@@ -88,14 +88,14 @@ class KonfigurasaunSistemaSerializer(serializers.ModelSerializer):
 
 class PediduLisensaSerializer(serializers.ModelSerializer):
     naran_funsonariu = serializers.CharField(source='funsonariu.naran', read_only=True)
-    status_display = serializers.CharField(source='get_status_pengajuan_display', read_only=True)
-    tipe_izin_display = serializers.CharField(source='get_tipe_izin_display', read_only=True)
+    status_display = serializers.CharField(source='get_estadu_pedidu_display', read_only=True)
+    tipu_lisensa_display = serializers.CharField(source='get_tipu_lisensa_display', read_only=True)
 
     class Meta:
         model = PediduLisensa
         fields = [
-            'id', 'naran_funsonariu', 'tipe_izin', 'tipe_izin_display',
-            'tanggal_mulai', 'tanggal_selesai', 'keterangan', 
-            'file_bukti', 'status_pengajuan', 'status_display', 'waktu_pengajuan'
+            'id', 'naran_funsonariu', 'tipu_lisensa', 'tipu_lisensa_display',
+            'data_hahu', 'data_remata', 'razaun', 
+            'file_evidensia', 'estadu_pedidu', 'status_display', 'tempu_pedidu'
         ]
-        read_only_fields = ['status_pengajuan', 'waktu_pengajuan', 'funsonariu']
+        read_only_fields = ['estadu_pedidu', 'tempu_pedidu', 'funsonariu']

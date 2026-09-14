@@ -26,30 +26,30 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">Orijem Tama Dadersan</label>
-                            <input type="time" name="jam_masuk_mulai" class="form-control" value="{{ pengaturan.jam_masuk_mulai|time:'H:i' }}">
+                            <input type="time" name="oras_tama_hahu" class="form-control" value="{{ pengaturan.oras_tama_hahu|time:'H:i' }}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">Limite Tama Dadersan</label>
-                            <input type="time" name="jam_masuk_akhir" class="form-control" value="{{ pengaturan.jam_masuk_akhir|time:'H:i' }}">
+                            <input type="time" name="oras_tama_remata" class="form-control" value="{{ pengaturan.oras_tama_remata|time:'H:i' }}">
                         </div>
                         
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">Orijem Deskansa</label>
-                            <input type="time" name="jam_keluar_istirahat" class="form-control" value="{{ pengaturan.jam_keluar_istirahat|time:'H:i' }}">
+                            <input type="time" name="oras_sai_deskansa" class="form-control" value="{{ pengaturan.oras_sai_deskansa|time:'H:i' }}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">Orijem Tama Lokraik</label>
-                            <input type="time" name="jam_masuk_siang" class="form-control" value="{{ pengaturan.jam_masuk_siang|time:'H:i' }}">
+                            <input type="time" name="oras_tama_lokraik" class="form-control" value="{{ pengaturan.oras_tama_lokraik|time:'H:i' }}">
                         </div>
                         
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">Orijem Sai / Fila</label>
-                            <input type="time" name="jam_keluar_sore" class="form-control" value="{{ pengaturan.jam_keluar_sore|time:'H:i' }}">
+                            <input type="time" name="oras_sai_lokraik" class="form-control" value="{{ pengaturan.oras_sai_lokraik|time:'H:i' }}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">Raio GPS (Metru)</label>
                             <div class="input-group">
-                                <input type="number" name="batas_radius_meter" class="form-control" value="{{ pengaturan.batas_radius_meter }}">
+                                <input type="number" name="limite_raio_metru" class="form-control" value="{{ pengaturan.limite_raio_metru }}">
                                 <span class="input-group-text">m</span>
                             </div>
                         </div>
@@ -102,8 +102,8 @@
                         <tbody>
                             {% for l in hari_libur_list %}
                             <tr>
-                                <td class="ps-2 small fw-bold">{{ l.tanggal|date:"d/m/Y" }}</td>
-                                <td class="small">{{ l.keterangan }}</td>
+                                <td class="ps-2 small fw-bold">{{ l.data_feriadu|date:"d/m/Y" }}</td>
+                                <td class="small">{{ l.katerangan }}</td>
                                 <td class="text-end pe-2">
                                     <a href="{% url 'dashboard_hari_libur_delete' l.id %}" class="btn btn-outline-danger btn-sm border-0 rounded-circle" onclick="return confirm('Hamoos loron libur ida ne\'e?')">
                                         <i class="fas fa-times"></i>

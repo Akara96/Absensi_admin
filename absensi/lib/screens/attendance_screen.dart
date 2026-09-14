@@ -36,10 +36,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   double? _currentLng;
   double? _currentJarak;
 
-  bool _sudahMasuk = false;
-  bool _sudahIstirahat = false;
-  bool _sudahMasukSiang = false;
-  bool _sudahKeluar = false;
+  bool _tamaOna = false;
+  bool _deskansaOna = false;
+  bool _tamaLokraikOna = false;
+  bool _saiOna = false;
 
   late Timer _clockTimer;
   Timer? _monitorTimer; // Timer foun ba monitor lokalizasaun
@@ -60,10 +60,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     try {
       final status = await ApiService.getTodayStatus();
       setState(() {
-        _sudahMasuk = status['sudah_masuk'] ?? false;
-        _sudahIstirahat = status['sudah_istirahat'] ?? false;
-        _sudahMasukSiang = status['sudah_masuk_siang'] ?? false;
-        _sudahKeluar = status['sudah_pulang'] ?? status['sudah_keluar'] ?? false;
+        _tamaOna = status['tama_ona'] ?? false;
+        _deskansaOna = status['deskansa_ona'] ?? false;
+        _tamaLokraikOna = status['tama_lokraik_ona'] ?? false;
+        _saiOna = status['sai_ona'] ?? false;
       });
     } catch (e) {
       debugPrint("Falaha foti Dadus: $e");
@@ -92,7 +92,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     _monitorTimer?.cancel();
     
     // So monitor se tama ona maibe seidauk fila
-    if (_sudahMasuk && !_sudahKeluar) {
+    if (_tamaOna && !_saiOna) {
       _runLocationCheck(); // Check immediatu dala ida
       
       _monitorTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
@@ -115,11 +115,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       );
 
       String statusLabel = "Aktivu";
-      if (_sudahMasukSiang) {
+      if (_tamaLokraikOna) {
         statusLabel = "Masuk Lokraik";
-      } else if (_sudahIstirahat) {
+      } else if (_deskansaOna) {
         statusLabel = "Deskansa";
-      } else if (_sudahMasuk) {
+      } else if (_tamaOna) {
         statusLabel = "Masuk Dadersan";
       }
 
@@ -127,7 +127,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         latitude: position.latitude,
         longitude: position.longitude,
         distansiaMetru: distance,
-        statusAbsen: statusLabel,
+        estaduAbsensi: statusLabel,
       );
       
       debugPrint("Monitor Geofence: Distansia ${distance.toStringAsFixed(1)}m");
@@ -178,11 +178,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 
-  Future<void> _handleAbsen(String tipeAbsen) async {
+  Future<void> _handleAbsen(String tipuAbsensi) async {
     final now = DateTime.now();
 
     // 1. Validasi Waktu Lokal di Flutter
-    if (tipeAbsen == 'keluar_istirahat') {
+    if (tipuAbsensi == 'deskansa') {
       if (now.hour < AppConfig.lunchBreakHour) {
         setState(() {
           _statusAbsensi =
@@ -191,7 +191,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         });
         return;
       }
-    } else if (tipeAbsen == 'masuk_siang') {
+    } else if (tipuAbsensi == 'tama_lokraik') {
       if (now.hour < AppConfig.afternoonInHour) {
         setState(() {
           _statusAbsensi =
@@ -200,7 +200,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         });
         return;
       }
-    } else if (tipeAbsen == 'keluar') {
+    } else if (tipuAbsensi == 'sai') {
       if (now.hour < AppConfig.eveningOutHour ||
           (now.hour == AppConfig.eveningOutHour &&
               now.minute < AppConfig.eveningOutMinute)) {
@@ -287,7 +287,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       }
 
       // 4. Simpan data
-      await _submitDataAbsensi(tipeAbsen);
+      await _submitDataAbsensi(tipuAbsensi);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -308,22 +308,22 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     bool isEnabled = false;
     final now = DateTime.now();
 
-    if (type == 'masuk') {
-      isEnabled = !_sudahMasuk;
-    } else if (type == 'keluar_istirahat') {
+    if (type == 'tama') {
+      isEnabled = !_tamaOna;
+    } else if (type == 'deskansa') {
       isEnabled =
-          _sudahMasuk &&
-          !_sudahIstirahat &&
+          _tamaOna &&
+          !_deskansaOna &&
           now.hour >= AppConfig.lunchBreakHour;
-    } else if (type == 'masuk_siang') {
+    } else if (type == 'tama_lokraik') {
       isEnabled =
-          _sudahIstirahat &&
-          !_sudahMasukSiang &&
+          _deskansaOna &&
+          !_tamaLokraikOna &&
           now.hour >= AppConfig.afternoonInHour;
-    } else if (type == 'keluar') {
+    } else if (type == 'sai') {
       isEnabled =
-          _sudahMasukSiang &&
-          !_sudahKeluar &&
+          _tamaLokraikOna &&
+          !_saiOna &&
           (now.hour > AppConfig.eveningOutHour ||
               (now.hour == AppConfig.eveningOutHour &&
                   now.minute >= AppConfig.eveningOutMinute));
@@ -358,14 +358,14 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 
-  Future<void> _submitDataAbsensi(String tipeAbsen) async {
+  Future<void> _submitDataAbsensi(String tipuAbsensi) async {
     bool online = await ApiService.isConnected();
     if (!online) {
       await OfflineService.saveOffline(
         _currentLat!,
         _currentLng!,
         _currentJarak!,
-        tipeAbsen,
+        tipuAbsensi,
       );
       await _checkPendingSync();
       setState(() {
@@ -383,27 +383,22 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         latitude: _currentLat!,
         longitude: _currentLng!,
         distansiaMetru: _currentJarak!,
-        tipeAbsen: tipeAbsen,
+        tipuAbsensi: tipuAbsensi,
       );
 
       // Refresh status agar tombol langsung ter-update (abu-abu)
       await _fetchStatus();
 
       // Bangun pesan sukses yang lebih informatif
-      final statusKehadiran = result['status_kehadiran'] ?? '';
-      if (tipeAbsen == 'keluar') {
-        final durasi = result['durasi_jam'];
-        final durasiFmt = durasi != null
-            ? ' (${durasi.toStringAsFixed(1)} oras)'
-            : '';
+      final mensagem = result['message'] ?? 'Susesu Presensa ona!';
+      if (tipuAbsensi == 'sai') {
         setState(() {
-          _statusAbsensi =
-              "Susesu Presensa Sai ona!$durasiFmt\nEstadu: $statusKehadiran";
+          _statusAbsensi = mensagem;
           _waktuAbsensi = DateTime.now().toString().split('.').first;
         });
       } else {
         setState(() {
-          _statusAbsensi = "Susesu Presensa ona!\nEstadu: $statusKehadiran";
+          _statusAbsensi = mensagem;
           _waktuAbsensi = DateTime.now().toString().split('.').first;
         });
       }
@@ -685,14 +680,14 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                           children: [
                             _buildActionButton(
                               title: "TAMA DADERSAN",
-                              type: 'masuk',
+                              type: 'tama',
                               icon: Icons.login,
                               color: Theme.of(context).colorScheme.primary,
                             ),
                             const SizedBox(width: 12),
                             _buildActionButton(
                               title: "DESKANSA",
-                              type: 'keluar_istirahat',
+                              type: 'deskansa',
                               icon: Icons.timer_off_outlined,
                               color: Colors.orange.shade600,
                             ),
@@ -704,14 +699,14 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                           children: [
                             _buildActionButton(
                               title: "TAMA LOKRAIK",
-                              type: 'masuk_siang',
+                              type: 'tama_lokraik',
                               icon: Icons.wb_sunny_outlined,
                               color: Colors.blue.shade600,
                             ),
                             const SizedBox(width: 12),
                             _buildActionButton(
                               title: "SAI / FILA",
-                              type: 'keluar',
+                              type: 'sai',
                               icon: Icons.logout,
                               color: Colors.red.shade600,
                             ),

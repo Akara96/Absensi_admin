@@ -44,20 +44,20 @@ class PresensaAdmin(admin.ModelAdmin):
 
 @admin.register(KonfigurasaunSistema)
 class KonfigurasaunSistemaAdmin(admin.ModelAdmin):
-    list_display = ('jam_masuk_mulai', 'jam_masuk_akhir', 'batas_radius_meter', 'updated_at')
+    list_display = ('oras_tama_hahu', 'oras_tama_remata', 'limite_raio_metru', 'updated_at')
 
 
 @admin.register(PediduLisensa)
 class PediduLisensaAdmin(admin.ModelAdmin):
-    list_display = ('funsonariu', 'tipe_izin', 'tanggal_mulai', 'tanggal_selesai', 'status_pengajuan')
-    list_filter = ('status_pengajuan', 'tipe_izin')
+    list_display = ('funsonariu', 'tipu_lisensa', 'data_hahu', 'data_remata', 'estadu_pedidu')
+    list_filter = ('estadu_pedidu', 'tipu_lisensa')
     search_fields = ('funsonariu__naran',)
 
 
 @admin.register(LoronFeriadu)
 class LoronFeriaduAdmin(admin.ModelAdmin):
-    list_display = ('tanggal', 'keterangan')
-    ordering = ('-tanggal',)
+    list_display = ('data_feriadu', 'katerangan')
+    ordering = ('-data_feriadu',)
 
 
 # Kustomizasaun header Django Admin

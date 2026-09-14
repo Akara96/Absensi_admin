@@ -128,7 +128,7 @@ class ApiService {
     required double latitude,
     required double longitude,
     required double distansiaMetru,
-    required String tipeAbsen,
+    required String tipuAbsensi,
   }) async {
     final token = await _getToken();
     if (token == null) throw Exception('Sesaun la válidu. Favor tama fali.');
@@ -140,7 +140,7 @@ class ApiService {
           'latitude': latitude,
           'longitude': longitude,
           'distansia_metru': distansiaMetru,
-          'tipe_absen': tipeAbsen,
+          'tipu_absensi': tipuAbsensi,
         },
         options: Options(
           headers: {'Authorization': 'Bearer $token'},
@@ -217,10 +217,10 @@ class ApiService {
 
   /// Kirim permohonan izin/cuti dengan foto bukti
   static Future<void> submitIzin({
-    required String tipeIzin,
-    required String tanggalMulai,
-    required String tanggalSelesai,
-    required String keterangan,
+    required String tipuLisensa,
+    required String dataHahu,
+    required String dataRemata,
+    required String razaun,
     required String filePath,
   }) async {
     final token = await _getToken();
@@ -228,11 +228,11 @@ class ApiService {
 
     try {
       final formData = FormData.fromMap({
-        'tipe_izin': tipeIzin,
-        'tanggal_mulai': tanggalMulai,
-        'tanggal_selesai': tanggalSelesai,
-        'keterangan': keterangan,
-        'file_bukti': await MultipartFile.fromFile(filePath),
+        'tipu_lisensa': tipuLisensa,
+        'data_hahu': dataHahu,
+        'data_remata': dataRemata,
+        'razaun': razaun,
+        'file_evidensia': await MultipartFile.fromFile(filePath),
       });
 
       final response = await _dio.post(
@@ -306,7 +306,7 @@ class ApiService {
     required double latitude,
     required double longitude,
     required double distansiaMetru,
-    required String statusAbsen,
+    required String estaduAbsensi,
   }) async {
     final token = await _getToken();
     if (token == null) return;
@@ -318,7 +318,7 @@ class ApiService {
           'latitude': latitude,
           'longitude': longitude,
           'distansia_metru': distansiaMetru,
-          'status_absen': statusAbsen,
+          'estadu_absensi': estaduAbsensi,
         },
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );

@@ -73,28 +73,28 @@ class AbsensiView(APIView):
         lat = serializer.validated_data['latitude']
         lng = serializer.validated_data['longitude']
         dist = serializer.validated_data['distansia_metru']
-        tipe = serializer.validated_data['tipe_absen']
+        tipu = serializer.validated_data['tipu_absensi']
         
         konf = get_konfigurasaun()
         now = timezone.now()
         today = now.date()
 
         # 1. CEK RAIO GPS
-        if dist > konf.batas_radius_meter:
+        if dist > konf.limite_raio_metru:
             return Response({'error': f'Ita boot iha liur husi raio servisu ({int(dist)}m). Favor besik ba kantór!'}, status=status.HTTP_400_BAD_REQUEST)
 
         # 2. PROSESU PRESENSA
         presensa = Presensa.objects.filter(funsonariu=request.user, tempu_tama__date=today).first()
 
-        if tipe == 'masuk':
+        if tipu == 'tama':
             if presensa:
                 return Response({'error': 'Ita boot halo ona presensa tama dadersan nian ohin.'}, status=status.HTTP_400_BAD_REQUEST)
             
             # Cek oráriu tama
             current_time = now.time()
-            res_status = 'hadir'
-            if current_time > konf.jam_masuk_akhir:
-                res_status = 'terlambat'
+            res_status = 'prezente'
+            if current_time > konf.oras_tama_remata:
+                res_status = 'tardiu'
             
             presensa = Presensa.objects.create(
                 funsonariu=request.user,
@@ -105,7 +105,7 @@ class AbsensiView(APIView):
             )
             return Response({'message': f'Presensa tama susesu! (Estadu: {res_status})'})
 
-        elif tipe == 'istirahat':
+        elif tipu == 'deskansa':
             if not presensa:
                 return Response({'error': 'Ita boot seidauk presensa tama dadersan.'}, status=status.HTTP_400_BAD_REQUEST)
             if presensa.tempu_sai_deskansa:
@@ -115,7 +115,7 @@ class AbsensiView(APIView):
             presensa.save()
             return Response({'message': 'Presensa deskansa susesu!'})
 
-        elif tipe == 'masuk_siang':
+        elif tipu == 'tama_lokraik':
             if not presensa:
                 return Response({'error': 'Ita boot seidauk presensa tama dadersan.'}, status=status.HTTP_400_BAD_REQUEST)
             if not presensa.tempu_sai_deskansa:
@@ -127,7 +127,7 @@ class AbsensiView(APIView):
             presensa.save()
             return Response({'message': 'Presensa tama lokraik susesu!'})
 
-        elif tipe == 'pulang':
+        elif tipu == 'sai':
             if not presensa:
                 return Response({'error': 'Ita boot seidauk presensa tama dadersan.'}, status=status.HTTP_400_BAD_REQUEST)
             if presensa.tempu_sai:
@@ -136,17 +136,17 @@ class AbsensiView(APIView):
             presensa.tempu_sai = now
             
             # Hatama Lembur se liu oráriu
-            if now.time() > konf.jam_keluar_sore:
-                finish_dt = timezone.make_aware(datetime.combine(today, konf.jam_keluar_sore))
+            if now.time() > konf.oras_sai_lokraik:
+                finish_dt = timezone.make_aware(datetime.combine(today, konf.oras_sai_lokraik))
                 diff = now - finish_dt
-                presensa.durasi_lembur = round(diff.total_seconds() / 3600, 1)
-                if presensa.durasi_lembur > 0.5:
-                    presensa.komentariu += f" [Lembur {presensa.durasi_lembur} jam]"
+                presensa.durasaun_horas_ekstra = round(diff.total_seconds() / 3600, 1)
+                if presensa.durasaun_horas_ekstra > 0.5:
+                    presensa.komentariu += f" [Horas Ekstra {presensa.durasaun_horas_ekstra} jam]"
 
             presensa.save()
             return Response({'message': 'Presensa fila lokraik susesu! Obrigadu.'})
 
-        return Response({'error': 'Tipe presensa la hatene'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Tipu presensa la hatene'}, status=status.HTTP_400_BAD_REQUEST)
 
 class StatusHariIniView(APIView):
     permission_classes = [IsAuthenticated]
@@ -156,11 +156,11 @@ class StatusHariIniView(APIView):
         presensa = Presensa.objects.filter(funsonariu=request.user, tempu_tama__date=today).first()
         
         data = {
-            'sudah_masuk': presensa is not None,
-            'sudah_istirahat': presensa.tempu_sai_deskansa is not None if presensa else False,
-            'sudah_masuk_siang': presensa.tempu_tama_lokraik is not None if presensa else False,
-            'sudah_pulang': presensa.tempu_sai is not None if presensa else False,
-            'status': presensa.status if presensa else None,
+            'tama_ona': presensa is not None,
+            'deskansa_ona': presensa.tempu_sai_deskansa is not None if presensa else False,
+            'tama_lokraik_ona': presensa.tempu_tama_lokraik is not None if presensa else False,
+            'sai_ona': presensa.tempu_sai is not None if presensa else False,
+            'estadu': presensa.status if presensa else None,
             'detail': PresensaSerializer(presensa).data if presensa else None
         }
         return Response(data)
@@ -191,7 +191,7 @@ class UnduhExcelView(APIView):
                 'Tama Lokraik': p.tempu_tama_lokraik.strftime('%H:%M:%S') if p.tempu_tama_lokraik else '-',
                 'Sai': p.tempu_sai.strftime('%H:%M:%S') if p.tempu_sai else '-',
                 'Estadu': p.status,
-                'Horas Ekstra (Jam)': p.durasi_lembur,
+                'Horas Ekstra (Jam)': p.durasaun_horas_ekstra,
                 'Komentáriu': p.komentariu
             })
         
@@ -226,7 +226,7 @@ class PengajuanIzinView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request):
-        queryset = PediduLisensa.objects.filter(funsonariu=request.user).order_by('-waktu_pengajuan')
+        queryset = PediduLisensa.objects.filter(funsonariu=request.user).order_by('-tempu_pedidu')
         serializer = PediduLisensaSerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -241,7 +241,7 @@ class MonitorLokalizasaunView(APIView):
         lat = request.data.get('latitude')
         lng = request.data.get('longitude')
         dist = request.data.get('distansia_metru', 0)
-        status_absen = request.data.get('status_absen', 'Ativu')
+        estadu_absen = request.data.get('estadu_absensi', 'Ativu')
 
         if lat is None or lng is None:
             return Response({'error': 'Coordenadas falta'}, status=status.HTTP_400_BAD_REQUEST)
@@ -249,7 +249,7 @@ class MonitorLokalizasaunView(APIView):
         konf = get_konfigurasaun()
         
         # Grava violasaun deit se distansia liu husi limite
-        if float(dist) > konf.batas_radius_meter:
+        if float(dist) > konf.limite_raio_metru:
             ViolaLokalizasaun.objects.create(
                 funsonariu=request.user,
                 latitude=lat,

@@ -16,8 +16,8 @@ def get_common_context(request):
     """Retorna contextu komun ba dashboard (notifikasaun, etc)."""
     from .models import ViolaLokalizasaun
     hari_ini = date.today()
-    izin_count = PediduLisensa.objects.filter(status_pengajuan='menunggu').count()
-    lembur_count = Presensa.objects.filter(tempu_tama__date=hari_ini, durasi_lembur__gt=0).count()
+    izin_count = PediduLisensa.objects.filter(estadu_pedidu='hein').count()
+    lembur_count = Presensa.objects.filter(tempu_tama__date=hari_ini, durasaun_horas_ekstra__gt=0).count()
     violasaun_list = ViolaLokalizasaun.objects.filter(tempu__date=hari_ini).select_related('funsonariu')[:5]
     
     return {
@@ -87,7 +87,7 @@ def dashboard_home(request):
     total_funsonariu = Funsonariu.objects.filter(is_active=True).count()
     hadir_hari_ini = Presensa.objects.filter(tempu_tama__date=hari_ini).count()
     terlambat_hari_ini = Presensa.objects.filter(
-        tempu_tama__date=hari_ini, status='terlambat'
+        tempu_tama__date=hari_ini, status='tardiu'
     ).count()
     tidak_hadir = total_funsonariu - hadir_hari_ini
 
@@ -95,8 +95,8 @@ def dashboard_home(request):
     unit_kerja_list = Funsonariu.objects.values_list('unidade_traballu', flat=True).distinct().exclude(unidade_traballu='')
 
     # Estatístika Pedidu Lisensa & Lembur
-    izin_pending_count = PediduLisensa.objects.filter(status_pengajuan='menunggu').count()
-    lembur_qs = Presensa.objects.filter(tempu_tama__date=hari_ini, durasi_lembur__gt=0).select_related('funsonariu')
+    izin_pending_count = PediduLisensa.objects.filter(estadu_pedidu='hein').count()
+    lembur_qs = Presensa.objects.filter(tempu_tama__date=hari_ini, durasaun_horas_ekstra__gt=0).select_related('funsonariu')
     lembur_count_today = lembur_qs.count()
 
     context = get_common_context(request)
@@ -126,8 +126,8 @@ def dashboard_home(request):
     total_staf = Funsonariu.objects.filter(is_active=True).count()
     
     for d in last_7_days:
-        h = Presensa.objects.filter(tempu_tama__date=d, status='hadir').count()
-        t = Presensa.objects.filter(tempu_tama__date=d, status='terlambat').count()
+        h = Presensa.objects.filter(tempu_tama__date=d, status='prezente').count()
+        t = Presensa.objects.filter(tempu_tama__date=d, status='tardiu').count()
         f = max(0, total_staf - (h + t))
         
         chart_hadir.append(h)
@@ -283,9 +283,9 @@ def dashboard_pegawai_history(request, pegawai_id):
     presensa_qs = Presensa.objects.filter(funsonariu=funsonariu).order_by('-tempu_tama')
     
     # Estatístika Individuál
-    total_hadir = presensa_qs.filter(status='hadir').count()
-    total_terlambat = presensa_qs.filter(status='terlambat').count()
-    total_izin = presensa_qs.filter(status__in=['izin', 'sakit', 'cuti', 'mendesak']).count()
+    total_hadir = presensa_qs.filter(status='prezente').count()
+    total_terlambat = presensa_qs.filter(status='tardiu').count()
+    total_izin = presensa_qs.filter(status__in=['lisensa', 'moras', 'ferias', 'urjente']).count()
 
     context = get_common_context(request)
     context.update({
@@ -309,14 +309,14 @@ def dashboard_pengaturan(request):
         action = request.POST.get('action')
         
         if action == 'save_pengaturan':
-            konf.jam_masuk_mulai = request.POST.get('jam_masuk_mulai')
-            konf.jam_masuk_akhir = request.POST.get('jam_masuk_akhir')
-            konf.jam_keluar_istirahat = request.POST.get('jam_keluar_istirahat')
-            konf.jam_masuk_siang = request.POST.get('jam_masuk_siang')
-            konf.jam_keluar_sore = request.POST.get('jam_keluar_sore')
-            konf.batas_radius_meter = request.POST.get('batas_radius_meter')
+            konf.oras_tama_hahu = request.POST.get('oras_tama_hahu')
+            konf.oras_tama_remata = request.POST.get('oras_tama_remata')
+            konf.oras_sai_deskansa = request.POST.get('oras_sai_deskansa')
+            konf.oras_tama_lokraik = request.POST.get('oras_tama_lokraik')
+            konf.oras_sai_lokraik = request.POST.get('oras_sai_lokraik')
+            konf.limite_raio_metru = request.POST.get('limite_raio_metru')
             # Buat notifikasi lebih detail
-            konf.last_message = f"Oráriu foun: Tama ({konf.jam_masuk_mulai} - {konf.jam_masuk_akhir}), Deskansa ({konf.jam_keluar_istirahat}), Tama Lokraik ({konf.jam_masuk_siang}), Sai ({konf.jam_keluar_sore}), Raio GPS: {konf.batas_radius_meter}m."
+            konf.last_message = f"Oráriu foun: Tama ({konf.oras_tama_hahu} - {konf.oras_tama_remata}), Deskansa ({konf.oras_sai_deskansa}), Tama Lokraik ({konf.oras_tama_lokraik}), Sai ({konf.oras_sai_lokraik}), Raio GPS: {konf.limite_raio_metru}m."
             konf.save()
             return redirect('dashboard_konfigura')
             
@@ -324,7 +324,7 @@ def dashboard_pengaturan(request):
             tgl = request.POST.get('tanggal')
             ket = request.POST.get('keterangan')
             if tgl and ket:
-                LoronFeriadu.objects.get_or_create(tanggal=tgl, defaults={'keterangan': ket})
+                LoronFeriadu.objects.get_or_create(data_feriadu=tgl, defaults={'katerangan': ket})
                 konf.last_message = f"Feriadu foun input: {ket} iha data {tgl}."
                 konf.save()
             return redirect('dashboard_konfigura')
@@ -343,7 +343,7 @@ def dashboard_hari_libur_delete(request, libur_id):
     """Hamos loron feriadu."""
     try:
         libur = LoronFeriadu.objects.get(id=libur_id)
-        msg_delete = f"Feriadu '{libur.keterangan}' ({libur.tanggal}) hamoos ona."
+        msg_delete = f"Feriadu '{libur.katerangan}' ({libur.data_feriadu}) hamoos ona."
         libur.delete()
     except LoronFeriadu.DoesNotExist:
         msg_delete = "Loron feriadu la hetan."
@@ -358,7 +358,7 @@ def dashboard_hari_libur_delete(request, libur_id):
 @user_passes_test(is_admin, login_url='dashboard_login')
 def dashboard_izin(request):
     """Halaman Kestiona Pedidu Lisensa."""
-    izin_list = PediduLisensa.objects.all().order_by('-waktu_pengajuan')
+    izin_list = PediduLisensa.objects.all().order_by('-tempu_pedidu')
     context = get_common_context(request)
     context.update({'izin_list': izin_list})
     return render(request, 'dashboard/izin.html', context)
@@ -371,11 +371,11 @@ def dashboard_izin_action(request, izin_id, action):
     try:
         pedidu = PediduLisensa.objects.get(id=izin_id)
         if action == 'approve':
-            pedidu.status_pengajuan = 'disetujui'
+            pedidu.estadu_pedidu = 'aprova'
             # Update dadus presensa iha loron lisensa nian
-            delta = pedidu.tanggal_selesai - pedidu.tanggal_mulai
+            delta = pedidu.data_remata - pedidu.data_hahu
             for i in range(delta.days + 1):
-                tgl = pedidu.tanggal_mulai + timedelta(days=i)
+                tgl = pedidu.data_hahu + timedelta(days=i)
                 from datetime import datetime, time
                 dt_tama = timezone.make_aware(datetime.combine(tgl, time(8, 0, 0)))
                 Presensa.objects.update_or_create(
@@ -387,12 +387,12 @@ def dashboard_izin_action(request, izin_id, action):
                         'latitude': OFFICE_LAT,
                         'longitude': OFFICE_LNG,
                         'distansia_metru': 0,
-                        'status': pedidu.tipe_izin,
-                        'komentariu': f"Aprova hosi Web Admin (Razaun: {pedidu.keterangan})"
+                        'status': pedidu.tipu_lisensa,
+                        'komentariu': f"Aprova hosi Web Admin (Razaun: {pedidu.razaun})"
                     }
                 )
         elif action == 'reject':
-            pedidu.status_pengajuan = 'ditolak'
+            pedidu.estadu_pedidu = 'rejeita'
         pedidu.save()
     except PediduLisensa.DoesNotExist:
         pass

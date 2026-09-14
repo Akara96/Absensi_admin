@@ -108,10 +108,10 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
     setState(() => _isLoading = true);
     try {
       await ApiService.submitIzin(
-        tipeIzin: _tipeIzin,
-        tanggalMulai: _dateFormat.format(_tanggalMulai),
-        tanggalSelesai: _dateFormat.format(_tanggalSelesai),
-        keterangan: _keteranganController.text.trim(),
+        tipuLisensa: _tipeIzin,
+        dataHahu: _dateFormat.format(_tanggalMulai),
+        dataRemata: _dateFormat.format(_tanggalSelesai),
+        razaun: _keteranganController.text.trim(),
         filePath: _fotoFile!.path,
       );
       if (mounted) {
@@ -185,11 +185,11 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
                                 children: [
                                   _TipeChip(label: 'Izin', value: 'izin', icon: Icons.person_off_outlined, selected: _tipeIzin == 'izin', onTap: () => setState(() => _tipeIzin = 'izin')),
                                   const SizedBox(width: 8),
-                                  _TipeChip(label: 'Moras', value: 'sakit', icon: Icons.sick_outlined, selected: _tipeIzin == 'sakit', onTap: () => setState(() => _tipeIzin = 'sakit')),
+                                  _TipeChip(label: 'Moras', value: 'moras', icon: Icons.sick_outlined, selected: _tipeIzin == 'moras', onTap: () => setState(() => _tipeIzin = 'moras')),
                                   const SizedBox(width: 8),
-                                  _TipeChip(label: 'Férias', value: 'cuti', icon: Icons.beach_access_outlined, selected: _tipeIzin == 'cuti', onTap: () => setState(() => _tipeIzin = 'cuti')),
+                                  _TipeChip(label: 'Férias', value: 'ferias', icon: Icons.beach_access_outlined, selected: _tipeIzin == 'ferias', onTap: () => setState(() => _tipeIzin = 'ferias')),
                                   const SizedBox(width: 8),
-                                  _TipeChip(label: 'Mendesak', value: 'mendesak', icon: Icons.notification_important_outlined, selected: _tipeIzin == 'mendesak', onTap: () => setState(() => _tipeIzin = 'mendesak')),
+                                  _TipeChip(label: 'Urjenti', value: 'urjenti', icon: Icons.notification_important_outlined, selected: _tipeIzin == 'urjenti', onTap: () => setState(() => _tipeIzin = 'urjenti')),
                                 ],
                               ),
                               const SizedBox(height: 20),
@@ -389,19 +389,19 @@ class _IzinCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColors = {'menunggu': Colors.orange, 'disetujui': Colors.green, 'ditolak': Colors.red};
+    final statusColors = {'hein': Colors.orange, 'aprova': Colors.green, 'rezeita': Colors.red};
     final tipeIcons = {
-      'sakit': Icons.sick_outlined,
+      'moras': Icons.sick_outlined,
       'izin': Icons.person_off_outlined,
-      'cuti': Icons.beach_access_outlined,
-      'mendesak': Icons.notification_important_outlined,
+      'ferias': Icons.beach_access_outlined,
+      'urjenti': Icons.notification_important_outlined,
     };
-    final status = izin['status_pengajuan'] as String? ?? 'menunggu';
-    final tipe = izin['tipe_izin'] as String? ?? 'izin';
+    final status = izin['estadu_pedidu'] as String? ?? 'hein';
+    final tipe = izin['tipu_lisensa'] as String? ?? 'izin';
     var statusColor = statusColors[status] ?? Colors.grey;
 
     // Special color for mendezak if pending
-    if (tipe == 'mendesak' && status == 'menunggu') {
+    if (tipe == 'urjenti' && status == 'hein') {
       statusColor = Colors.red;
     }
     return Card(
@@ -415,8 +415,8 @@ class _IzinCard extends StatelessWidget {
           backgroundColor: statusColor.withValues(alpha: 0.1),
           child: Icon(tipeIcons[tipe] ?? Icons.help_outline, color: statusColor),
         ),
-        title: Text(izin['tipe_izin_display'] ?? tipe, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('${izin['tanggal_mulai']} → ${izin['tanggal_selesai']}', style: const TextStyle(fontSize: 12)),
+        title: Text(izin['tipu_lisensa_display'] ?? tipe, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text('${izin['data_hahu']} → ${izin['data_remata']}', style: const TextStyle(fontSize: 12)),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),

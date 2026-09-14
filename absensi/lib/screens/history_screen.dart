@@ -79,22 +79,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       String statusLabel;
 
                       switch (status) {
-                        case 'hadir':
+                        case 'prezente':
                           statusColor = Colors.green;
                           statusIcon = Icons.check_circle;
                           statusLabel = 'PREZENTE';
                           break;
-                        case 'terlambat':
+                        case 'tardiu':
                           statusColor = Colors.orange;
                           statusIcon = Icons.access_time_filled;
                           statusLabel = 'TARDIU';
                           break;
-                        case 'hadir_sebagian':
+                        case 'prezente_balun':
                           statusColor = Colors.deepOrange;
                           statusIcon = Icons.timer_off;
                           statusLabel = 'BALUN';
                           break;
-                        case 'alpha':
+                        case 'falta':
                           statusColor = Colors.red;
                           statusIcon = Icons.cancel;
                           statusLabel = 'FALTA';

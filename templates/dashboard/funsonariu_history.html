@@ -80,19 +80,19 @@
                         <td class="ps-4 fw-medium">{{ a.tempu_tama|date:"d M Y" }}</td>
                         <td class="font-monospace fw-bold">{{ a.tempu_tama|date:"H:i:s" }}</td>
                         <td>
-                            {% if a.status == 'hadir' %}
+                            {% if a.status == 'prezente' %}
                             <span class="badge bg-success-subtle text-success border-success-subtle px-2">Prezente</span>
-                            {% elif a.status == 'terlambat' %}
+                            {% elif a.status == 'tardiu' %}
                             <span class="badge bg-warning-subtle text-warning border-warning-subtle px-2">Tardiu</span>
-                            {% elif a.status == 'izin' or a.status == 'sakit' or a.status == 'cuti' %}
+                            {% elif a.status == 'lisensa' or a.status == 'moras' or a.status == 'ferias' %}
                             <span class="badge bg-info-subtle text-info border-info-subtle px-2">{{ a.get_status_display }}</span>
                             {% else %}
                             <span class="badge bg-secondary-subtle text-secondary px-2">{{ a.status }}</span>
                             {% endif %}
                         </td>
                         <td>
-                            {% if a.durasi_lembur > 0 %}
-                            <span class="text-purple fw-bold">{{ a.durasi_lembur }}h</span>
+                            {% if a.durasaun_horas_ekstra > 0 %}
+                            <span class="text-purple fw-bold">{{ a.durasaun_horas_ekstra }}h</span>
                             {% else %}
                             <span class="text-muted small">-</span>
                             {% endif %}

@@ -1,31 +1,21 @@
 # Absensi Admin System 🏢
 
-Sistem Administrasi Absensi Pegawai berbasis **Django (Python)**. Sistem ini menyediakan **Web Dashboard** untuk pengelolaan data oleh admin, serta **REST API** yang digunakan untuk integrasi dengan aplikasi mobile (absensi masuk/keluar, izin, dll).
+Sistem Administrasi Absensi Pegawai berbasis **Django (Python)** dan **Flutter**. Absensi_admin ini adalah sebuah Sistem Presensi/Absensi Berbasis Geofencing yang ditujukan untuk memantau kehadiran pegawai, baik saat masuk kerja maupun pulang.
 
 ## 🌟 Fitur Utama
 
-Sistem ini terbagi menjadi dua bagian utama: **Web Dashboard Admin** dan **REST API**.
+Proyek ini terbagi menjadi dua bagian utama:
 
-### 💻 Web Dashboard Admin
-1. **Manajemen Pegawai (Funsonariu):**
-   - Tambah, Edit, dan Nonaktifkan data pegawai.
-   - Melihat detail informasi pegawai (NRE, Nama, Jabatan, dll).
-2. **Riwayat Absensi (Presensa):**
-   - Pemantauan real-time status kehadiran pegawai (Masuk, Keluar, Terlambat).
-   - Melihat lokasi (koordinat GPS) saat pegawai melakukan absensi.
-3. **Manajemen Izin (Pedido Licensa):**
-   - Menerima dan memproses pengajuan izin/sakit/cuti dari pegawai.
-   - Status persetujuan (Approved, Rejected, Pending).
-4. **Pengaturan Sistem:**
-   - Konfigurasi jam masuk, jam pulang, tarif lembur, dll.
-   - Pengelolaan hari libur.
-5. **Dokumentasi API Terintegrasi:**
-   - Menyediakan antarmuka Swagger UI (`/api/docs/`) untuk mempermudah developer melihat spesifikasi API.
+### 💻 Backend & Dashboard Admin (Django + MySQL)
+- Dibangun menggunakan Python dengan framework Django dan Django REST Framework (DRF).
+- Menyediakan Dashboard Admin Web (menggunakan Django Templates, Bootstrap, dsb.) yang memungkinkan pihak HR atau Admin untuk memantau rekap absensi, menyetujui izin/cuti pegawai, mengelola data pegawai, hingga mengatur zona geofence (koordinat kantor dan radius yang diizinkan).
+- Memiliki autentikasi berbasis JWT (JSON Web Tokens) untuk komunikasi aman ke aplikasi mobile.
 
-### 📱 REST API (Untuk Mobile)
-- **Otentikasi:** Login menggunakan JSON Web Token (JWT).
-- **Absensi:** Endpoint untuk absensi masuk dan pulang berdasarkan lokasi GPS.
-- **Pengajuan Izin:** Endpoint untuk mengirim form pengajuan izin kerja.
+### 📱 Aplikasi Mobile (Flutter)
+- Dibangun menggunakan Flutter (berada di dalam folder `absensi/`).
+- Aplikasi ini ditujukan untuk digunakan oleh para pegawai (klien).
+- Fitur utamanya memungkinkan pegawai untuk Check-in (Tama), Istirahat (Deskansa), dan Check-out (Sai) menggunakan sensor GPS. Sistem akan memvalidasi apakah pegawai berada di dalam radius geofence kantor atau tidak.
+- Pegawai juga wajib mengambil swafoto (selfie) sebagai bukti kehadiran, serta dapat mengajukan izin, sakit, atau cuti langsung melalui aplikasi.
 
 ---
 
@@ -39,13 +29,7 @@ Sistem ini terbagi menjadi dua bagian utama: **Web Dashboard Admin** dan **REST 
 
 ---
 
-## 🔑 Akun Default Admin
 
-Untuk mengakses Web Dashboard, gunakan kredensial berikut:
-- **Username (NRE):** `admin01`
-- **Password:** `admin123`
-
-*(Sangat disarankan untuk segera mengganti password ini saat sistem di-deploy ke production)*
 
 ---
 
