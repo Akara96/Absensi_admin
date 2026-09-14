@@ -39,47 +39,6 @@ Sistem ini terbagi menjadi dua bagian utama: **Web Dashboard Admin** dan **REST 
 
 ---
 
-## 🚀 Cara Instalasi & Menjalankan Sistem Lokal
-
-1. **Clone Repository**
-   ```bash
-   git clone https://github.com/Akara96/Absensi_admin.git
-   cd Absensi_admin
-   ```
-
-2. **Buat & Aktifkan Virtual Environment**
-   ```bash
-   python -m venv appsensi
-   # Untuk Windows:
-   .\appsensi\Scripts\activate
-   # Untuk Linux/Mac:
-   source appsensi/bin/activate
-   ```
-
-3. **Install Dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Konfigurasi Database**
-   - Pastikan Anda sudah membuat database di MySQL.
-   - (Opsional) Import file `db_absensi.sql` ke dalam database Anda.
-   - Sesuaikan pengaturan kredensial database di `absensi_admin/settings.py`.
-
-5. **Jalankan Migrasi Database**
-   ```bash
-   python manage.py makemigrations
-   python manage.py migrate
-   ```
-
-6. **Jalankan Server**
-   ```bash
-   python manage.py runserver
-   ```
-   Sistem dapat diakses melalui browser di: `http://127.0.0.1:8000/`
-
----
-
 ## 🔑 Akun Default Admin
 
 Untuk mengakses Web Dashboard, gunakan kredensial berikut:
