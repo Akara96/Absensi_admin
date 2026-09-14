@@ -1,0 +1,106 @@
+{% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="topbar d-flex justify-content-between align-items-center">
+    <div>
+        <h4 class="mb-1 fw-bold">Pedidu Lisensa</h4>
+        <p class="text-muted mb-0">Monitoriza no foti desizaun ba pedidu lisensa funsonáriu nian.</p>
+    </div>
+    <div class="bg-primary-subtle text-primary fw-bold px-3 py-2 rounded-pill small">
+        <i class="fas fa-file-medical me-2"></i>{{ izin_list|length }} Pedidu Rejista
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0 align-middle">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 py-3">Funsonáriu</th>
+                        <th class="py-3">Tipe Lisensa</th>
+                        <th class="py-3">Oráriu (Data)</th>
+                        <th class="py-3">Fotografia / Evidénsia</th>
+                        <th class="py-3">Estadu</th>
+                        <th class="pe-4 py-3 text-end">Asaun</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for izin in izin_list %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-light p-2 rounded-circle me-3">
+                                    <i class="fas fa-user-clock text-primary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">{{ izin.funsonariu.naran }}</h6>
+                                    <small class="text-muted">{{ izin.funsonariu.unidade_traballu|default:"-" }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-purple-subtle text-purple border rounded-pill px-3 py-2" style="background-color: #f5f3ff; color: #8b5cf6; border-color: #ddd6fe;">
+                                {{ izin.get_tipe_izin_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="small fw-semibold text-dark">{{ izin.tanggal_mulai|date:"d/m/Y" }}</div>
+                            <i class="fas fa-long-arrow-alt-down text-muted d-block small ms-2 my-1"></i>
+                            <div class="small fw-semibold text-dark">{{ izin.tanggal_selesai|date:"d/m/Y" }}</div>
+                        </td>
+                        <td>
+                            {% if izin.file_bukti %}
+                            <a href="{{ izin.file_bukti.url }}" target="_blank">
+                                <img src="{{ izin.file_bukti.url }}" alt="Bukti" class="rounded-3 border" width="60" height="40" style="object-fit: cover;">
+                            </a>
+                            {% else %}
+                            <span class="text-muted small">La iha foto</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if izin.status_pengajuan == 'menunggu' %}
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2 rounded-pill">
+                                <i class="fas fa-clock me-1"></i> Hein Desizaun
+                            </span>
+                            {% elif izin.status_pengajuan == 'disetujui' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
+                                <i class="fas fa-check-circle me-1"></i> Aprova ona
+                            </span>
+                            {% else %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill">
+                                <i class="fas fa-times-circle me-1"></i> Rejeitadu
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-4 text-end">
+                            {% if izin.status_pengajuan == 'menunggu' %}
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="{% url 'dashboard_izin_action' izin.id 'approve' %}" class="btn btn-success btn-sm px-3 rounded-pill fw-bold" onclick="return confirm('Ita boot certu katak atu APROVA pedidu ida ne\'e?')">
+                                    Aprova
+                                </a>
+                                <a href="{% url 'dashboard_izin_action' izin.id 'reject' %}" class="btn btn-outline-danger btn-sm px-3 rounded-pill fw-bold" onclick="return confirm('Ita boot certu katak atu REJEITA pedidu ida ne\'e?')">
+                                    Rejeita
+                                </a>
+                            </div>
+                            {% else %}
+                            <span class="text-muted small italic">Finalizadu</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="text-muted opacity-50 py-4">
+                                <i class="fas fa-folder-open fa-3x mb-3"></i>
+                                <p class="mb-0">La iha pedidu lisensa iha lista ne'e.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends 'dashboard/base.html' %}
+
+{% block content %}
+<div class="topbar d-flex justify-content-between align-items-center">
+    <div>
+        <h4 class="mb-1 fw-bold">Konfigurasaun Sistema</h4>
+        <p class="text-muted mb-0">Maneja oráriu servisu, raio GPS, no loron feriadu.</p>
+    </div>
+    <div class="small fw-bold text-muted">
+        <i class="fas fa-history me-1"></i>Atualiza ikus: {{ pengaturan.updated_at|date:"d M Y, H:i" }}
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Oráriu Servisu -->
+    <div class="col-lg-7">
+        <div class="card h-100 border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="fw-bold mb-0"><i class="fas fa-clock text-primary me-2"></i>Oráriu Servisu & Raio GPS</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_pengaturan">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Orijem Tama Dadersan</label>
+                            <input type="time" name="jam_masuk_mulai" class="form-control" value="{{ pengaturan.jam_masuk_mulai|time:'H:i' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Limite Tama Dadersan</label>
+                            <input type="time" name="jam_masuk_akhir" class="form-control" value="{{ pengaturan.jam_masuk_akhir|time:'H:i' }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Orijem Deskansa</label>
+                            <input type="time" name="jam_keluar_istirahat" class="form-control" value="{{ pengaturan.jam_keluar_istirahat|time:'H:i' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Orijem Tama Lokraik</label>
+                            <input type="time" name="jam_masuk_siang" class="form-control" value="{{ pengaturan.jam_masuk_siang|time:'H:i' }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Orijem Sai / Fila</label>
+                            <input type="time" name="jam_keluar_sore" class="form-control" value="{{ pengaturan.jam_keluar_sore|time:'H:i' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Raio GPS (Metru)</label>
+                            <div class="input-group">
+                                <input type="number" name="batas_radius_meter" class="form-control" value="{{ pengaturan.batas_radius_meter }}">
+                                <span class="input-group-text">m</span>
+                            </div>
+                        </div>
+
+                        <div class="col-12 mt-4">
+                            <button type="submit" class="btn btn-primary btn-premium px-5 py-3 w-100">
+                                <i class="fas fa-save me-2"></i>Atualiza Konfigurasaun
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loron Feriadu -->
+    <div class="col-lg-5">
+        <div class="card h-100 border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="fw-bold mb-0"><i class="fas fa-calendar-alt text-danger me-2"></i>Maneja Loron Feriadu / Libur</h6>
+            </div>
+            <div class="card-body">
+                <!-- Add Feriadu -->
+                <form method="POST" class="mb-4 p-3 border rounded-3 bg-light">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_libur">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Data Libur</label>
+                        <input type="date" name="tanggal" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Katerangan</label>
+                        <input type="text" name="keterangan" class="form-control" placeholder="Ez: Loron Proklamasaun..." required>
+                    </div>
+                    <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold py-2 rounded-pill">
+                        <i class="fas fa-plus me-1"></i>Hatama Feriadu
+                    </button>
+                </form>
+
+                <!-- List Feriadu -->
+                <div class="table-responsive" style="max-height: 350px;">
+                    <table class="table table-sm align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-2">Data</th>
+                                <th>Katerangan</th>
+                                <th class="text-end pe-2">Hamoos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for l in hari_libur_list %}
+                            <tr>
+                                <td class="ps-2 small fw-bold">{{ l.tanggal|date:"d/m/Y" }}</td>
+                                <td class="small">{{ l.keterangan }}</td>
+                                <td class="text-end pe-2">
+                                    <a href="{% url 'dashboard_hari_libur_delete' l.id %}" class="btn btn-outline-danger btn-sm border-0 rounded-circle" onclick="return confirm('Hamoos loron libur ida ne\'e?')">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted small">La iha loron feriadu rejistadu.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

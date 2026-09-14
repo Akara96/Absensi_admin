@@ -1,0 +1,114 @@
+{% extends 'dashboard/base.html' %}
+
+{% block extra_css %}
+<style>
+    .history-card { border-radius: 16px; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+    .stat-mini-card { padding: 16px; border-radius: 12px; border: 1px solid #f1f5f9; background: #f8fafc; }
+    .stat-label { font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+    .stat-value { font-size: 1.25rem; font-weight: 700; color: #0f172a; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="topbar d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center">
+        <div class="me-3">
+            {% if pegawai.foto %}
+            <img src="{{ pegawai.foto.url }}" alt="Foto" class="rounded-circle border" width="60" height="60" style="object-fit: cover;">
+            {% else %}
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:60px; height:60px; font-size: 24px;">
+                {{ pegawai.naran|slice:":1" }}
+            </div>
+            {% endif %}
+        </div>
+        <div>
+            <h4 class="mb-1 fw-bold">{{ pegawai.naran }}</h4>
+            <p class="text-muted mb-0">NRE: {{ pegawai.nre }} | Departamentu: {{ pegawai.unidade_traballu|default:"-" }}</p>
+        </div>
+    </div>
+    <a href="{% url 'dashboard_pegawai' %}" class="btn btn-light btn-premium">
+        <i class="fas fa-arrow-left me-2"></i>Fila fali
+    </a>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-mini-card">
+            <div class="stat-label">Total Prezente</div>
+            <div class="stat-value text-success">{{ total_hadir }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-mini-card">
+            <div class="stat-label">Total Tardiu</div>
+            <div class="stat-value text-warning">{{ total_terlambat }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-mini-card">
+            <div class="stat-label">Total Lisensa</div>
+            <div class="stat-value text-info">{{ total_izin }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-mini-card">
+            <div class="stat-label">Total Rejistu</div>
+            <div class="stat-value">{{ absensi_list|length }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card history-card">
+    <div class="card-header bg-white py-3 border-bottom-0">
+        <h6 class="fw-bold mb-0">Listagem Istória Presensa</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Data</th>
+                        <th>Oras Tama</th>
+                        <th>Estadu</th>
+                        <th>Lembur</th>
+                        <th class="pe-4">Komentáriu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in absensi_list %}
+                    <tr>
+                        <td class="ps-4 fw-medium">{{ a.tempu_tama|date:"d M Y" }}</td>
+                        <td class="font-monospace fw-bold">{{ a.tempu_tama|date:"H:i:s" }}</td>
+                        <td>
+                            {% if a.status == 'hadir' %}
+                            <span class="badge bg-success-subtle text-success border-success-subtle px-2">Prezente</span>
+                            {% elif a.status == 'terlambat' %}
+                            <span class="badge bg-warning-subtle text-warning border-warning-subtle px-2">Tardiu</span>
+                            {% elif a.status == 'izin' or a.status == 'sakit' or a.status == 'cuti' %}
+                            <span class="badge bg-info-subtle text-info border-info-subtle px-2">{{ a.get_status_display }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary px-2">{{ a.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if a.durasi_lembur > 0 %}
+                            <span class="text-purple fw-bold">{{ a.durasi_lembur }}h</span>
+                            {% else %}
+                            <span class="text-muted small">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-4"><small class="text-muted">{{ a.komentariu|default:"-" }}</small></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="text-muted small">La iha rejistu istória presensa ba funsonáriu ida ne'e.</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

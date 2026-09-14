@@ -1,0 +1,484 @@
+{% extends 'dashboard/base.html' %}
+
+{% block extra_css %}
+    <style>
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-left: 4px solid transparent;
+        }
+        
+        .stat-card.primary { border-left-color: var(--accent-color); }
+        .stat-card.success { border-left-color: #10b981; }
+        .stat-card.warning { border-left-color: #f59e0b; }
+        .stat-card.danger { border-left-color: #ef4444; }
+
+        .stat-value { font-size: 2rem; font-weight: 700; color: #0f172a; line-height: 1; margin-bottom: 8px; }
+        .stat-label { font-size: 0.875rem; color: #64748b; font-weight: 500; }
+
+        #map { 
+            height: clamp(300px, 40vh, 500px);
+            border-radius: 20px; 
+            z-index: 1; 
+        }
+
+        .table thead th {
+            background: #f1f5f9;
+            color: #475569;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            padding: 16px;
+            border: none;
+        }
+        
+        .table tbody td { padding: 16px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+
+        .badge-status {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .text-purple { color: #8b5cf6 !important; }
+        .bg-purple-subtle { background-color: #f5f3ff !important; border-color: #ddd6fe !important; }
+    </style>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+    <!-- Topbar -->
+    <div class="topbar d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="mb-1 fw-bold">Monitorizasaun Presensa</h4>
+            <p class="text-muted mb-0">Olá, {{ admin_nama }}. Haree ekipa nia presensa ohin.</p>
+        </div>
+        <div class="d-flex align-items-center bg-white rounded-pill px-4 py-2 border shadow-sm">
+            <i class="fas fa-calendar-day text-primary me-3"></i>
+            <span class="fw-semibold">{{ tanggal_target|date:"l, d F Y" }}</span>
+        </div>
+    </div>
+
+    <!-- Statistik Kartu -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card stat-card primary">
+                <div class="stat-value">{{ total_funsonariu }}</div>
+                <div class="stat-label">Totál Funsonáriu</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card success">
+                <div class="stat-value text-success">{{ hadir_hari_ini }}</div>
+                <div class="stat-label">Prezente Ohin</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card warning">
+                <div class="stat-value text-warning">{{ terlambat_hari_ini }}</div>
+                <div class="stat-label">Tardiu</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card danger">
+                <div class="stat-value text-danger">{{ tidak_hadir }}</div>
+                <div class="stat-label">Falta / Seidauk Tama</div>
+            </div>
+        </div>
+    </div>
+
+    {% if izin_pending_count > 0 or lembur_count_today > 0 %}
+    <!-- Notifikasaun Importante -->
+    <div class="row mb-5 g-3">
+        {% if izin_pending_count > 0 %}
+        <div class="col-md-6">
+            <div class="card bg-warning-subtle border-warning shadow-sm">
+                <div class="card-body d-flex align-items-center justify-content-between py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-warning text-white rounded-circle p-2 me-3">
+                            <i class="fas fa-exclamation-circle fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0">{{ izin_pending_count }} Pedidu Lisensa</h6>
+                            <small class="text-muted">Seidauk responde!</small>
+                        </div>
+                    </div>
+                    <a href="{% url 'dashboard_izin' %}" class="btn btn-warning btn-sm fw-bold px-3 rounded-pill">Haree</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if lembur_count_today > 0 %}
+        <div class="col-md-6">
+            <div class="card bg-purple-subtle border-purple shadow-sm">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-start mb-2">
+                        <div class="bg-purple text-white rounded-circle p-2 me-3" style="background-color: #8b5cf6 !important;">
+                            <i class="fas fa-bolt fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0">{{ lembur_count_today }} Funsonáriu Lembur</h6>
+                            <small class="text-muted">Halo servisu ekstra ohin.</small>
+                        </div>
+                    </div>
+                    <div class="ps-5">
+                        <div class="d-flex flex-wrap gap-2">
+                        {% for l in lembur_list_today %}
+                            <span class="badge bg-white text-purple border rounded-pill px-2 py-1 small fw-medium" style="color: #8b5cf6 !important; border-color: #ddd6fe !important;">
+                                {{ l.funsonariu.naran }} ({{ l.funsonariu.nre }})
+                            </span>
+                        {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if violasaun_count > 0 %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card bg-danger-subtle border-danger shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-danger text-white rounded-circle p-2 me-3">
+                            <i class="fas fa-map-marker-alt fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-1 text-danger">Alerta: Violação Geofence (Fora hosi Kantór)</h6>
+                            <p class="small text-muted mb-0">Detekta funsonáriu balun iha liur husi área kantór durante tempu servisu.</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr class="small text-muted">
+                                    <th>Naran Funsonáriu</th>
+                                    <th>Distánsia husi Kantór</th>
+                                    <th>Tempu Detekta</th>
+                                    <th>Estadu Oráriu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for v in violasaun_list %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-danger text-white rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                                {{ v.funsonariu.naran|slice:":1" }}
+                                            </div>
+                                            <span class="fw-bold">{{ v.funsonariu.naran }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger rounded-pill px-3 py-2">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            {{ v.distansia_metru|floatformat:1 }} metru
+                                        </span>
+                                    </td>
+                                    <td><span class="text-muted small"><i class="far fa-clock me-1"></i>{{ v.tempu|date:"H:i:s" }}</span></td>
+                                    <td><span class="badge bg-outline-secondary border text-secondary px-2 py-1">{{ v.last_status }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <div class="row g-4 mb-5">
+        <!-- Chart Section -->
+        <div class="col-lg-8">
+            <div class="card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold mb-0">Trend Presensa (Loron 7 ikus)</h5>
+                    <div class="small text-muted">Prezente vs Tardiu</div>
+                </div>
+                <canvas id="attendanceChart" style="max-height: 320px;"></canvas>
+            </div>
+        </div>
+        <!-- Filter Section -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-4">Filtra Dadus</h5>
+                    <form method="GET">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Data</label>
+                            <input type="date" name="tanggal" class="form-control rounded-3" value="{{ tanggal_target|date:'Y-m-d' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Departamentu</label>
+                            <select name="unidade_traballu" class="form-select rounded-3">
+                                <option value="">Departamentu Hotu</option>
+                                {% for unit in unit_kerja_list %}
+                                <option value="{{ unit }}" {% if filter_unit == unit %}selected{% endif %}>{{ unit }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold">Buka Naran</label>
+                            <div class="input-group">
+                                <span class="input-group-text border-end-0 bg-white"><i class="fas fa-search text-muted"></i></span>
+                                <input type="text" name="naran" class="form-control border-start-0 rounded-end-3" placeholder="Funsonáriu nia naran..." value="{{ filter_nama }}">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-premium py-3">
+                            Aplika Filtru
+                        </button>
+                        <a href="{% url 'dashboard_home' %}" class="btn btn-light w-100 mt-2 btn-premium text-muted">Reset</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <!-- Map Section -->
+        <div class="col-12">
+            <div class="card p-0 overflow-hidden border shadow-sm">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabel Absensi -->
+    <div class="card">
+        <div class="card-header bg-white py-4 px-4 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">Dadus Presensa Real-time</h5>
+            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">{{ presensa_list|length }} Rejistu Hetan</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Funsonáriu</th>
+                            <th>Departamentu</th>
+                            <th>Oras Tama</th>
+                            <th>Deviasaun Distánsia</th>
+                            <th>Lembur</th>
+                            <th>Estadu Presensa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for absen in presensa_list %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light rounded-2 p-2 me-3 text-primary">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ absen.funsonariu.naran }}</div>
+                                        <small class="text-muted">{{ absen.funsonariu.nre }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="text-secondary fw-medium">{{ absen.funsonariu.unidade_traballu|default:"-" }}</span></td>
+                            <td class="font-monospace fw-bold">{{ absen.tempu_tama|date:"H:i:s" }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="me-2">{{ absen.distansia_metru|floatformat:1 }} m</span>
+                                    {% if absen.distansia_metru > 500 %}
+                                    <i class="fas fa-exclamation-triangle text-danger small"></i>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if absen.durasi_lembur > 0 %}
+                                <div class="badge bg-purple-subtle text-purple border rounded-pill px-2">
+                                    <i class="fas fa-bolt me-1"></i>{{ absen.durasi_lembur }}h
+                                </div>
+                                {% else %}
+                                <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if absen.status == 'hadir' %}
+                                    <span class="badge-status bg-success-subtle text-success">
+                                        <i class="fas fa-check-circle me-1"></i> PREZENTE
+                                    </span>
+                                {% elif absen.status == 'terlambat' %}
+                                    <span class="badge-status bg-warning-subtle text-warning">
+                                        <i class="fas fa-clock me-1"></i> TARDIU
+                                    </span>
+                                {% else %}
+                                    <span class="badge-status bg-info-subtle text-info">
+                                        {{ absen.get_status_display|upper }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="text-muted">La iha dadus presensa ba kritériu ida ne'e.</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Data for Map -->
+<script id="absensi-data" type="application/json">
+[
+    {% for absen in presensa_list %}
+    {% if absen.latitude and absen.longitude %}
+    {
+        "lat": {{ absen.latitude|default:0 }},
+        "lng": {{ absen.longitude|default:0 }},
+        "nama": "{{ absen.funsonariu.naran|escapejs }}",
+        "waktu": "{{ absen.tempu_tama|date:'H:i'|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endif %}
+    {% endfor %}
+]
+</script>
+
+<script>
+    // Map Logic
+    var officeLat = -8.553495;
+    var officeLng = 125.524416;
+    var map = L.map('map', { zoomControl: false }).setView([officeLat, officeLng], 15);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.tileLayer('https://{s}.tile.carto.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: 'CartoDB'
+    }).addTo(map);
+
+    L.marker([officeLat, officeLng], {
+        icon: L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41]
+        })
+    }).addTo(map).bindPopup("<b>Kantór Sentrál</b>");
+    
+    L.circle([officeLat, officeLng], { 
+        color: '#3b82f6', 
+        fillOpacity: 0.1, 
+        radius: 500,
+        weight: 1
+    }).addTo(map);
+
+    try {
+        const dataElement = document.getElementById('absensi-data');
+        const absensiData = JSON.parse(dataElement.textContent || '[]');
+        
+        absensiData.forEach(function(absen) {
+            if (absen.lat && absen.lng) {
+                L.marker([absen.lat, absen.lng], {
+                    icon: L.icon({
+                        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41]
+                    })
+                }).addTo(map).bindPopup("<b>" + absen.nama + "</b><br>Presensa: " + absen.waktu);
+            }
+        });
+    } catch (e) { console.error("Error parsing map data:", e); }
+</script>
+
+<script id="chart-data" type="application/json">
+{
+    "labels": {{ chart_labels|safe|default:"[]" }},
+    "hadir": {{ chart_hadir|safe|default:"[]" }},
+    "terlambat": {{ chart_terlambat|safe|default:"[]" }},
+    "falta": {{ chart_falta|safe|default:"[]" }}
+}
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            const dataElement = document.getElementById('chart-data');
+            if (!dataElement) return;
+
+            // Bersihkan data agar valid JSON (mengganti single quote ke double quote jika perlu)
+            let rawData = dataElement.textContent.replace(/'/g, '"');
+            const data = JSON.parse(rawData);
+            
+            const ctx = document.getElementById('attendanceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Prezente',
+                            data: data.hadir,
+                            backgroundColor: '#10b981',
+                            borderRadius: 6,
+                            barThickness: 15
+                        },
+                        {
+                            label: 'Tardiu',
+                            data: data.terlambat,
+                            backgroundColor: '#f59e0b',
+                            borderRadius: 6,
+                            barThickness: 15
+                        },
+                        {
+                            label: 'Falta (Alpha)',
+                            data: data.falta,
+                            backgroundColor: '#ef4444',
+                            borderRadius: 6,
+                            barThickness: 15
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: { family: 'Inter', size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 12,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1, color: '#94a3b8' },
+                            grid: { borderDash: [5, 5], color: '#f1f5f9', drawBorder: false }
+                        },
+                        x: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { display: false, drawBorder: false }
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("Erro renderiza grafiku:", e);
+        }
+    });
+</script>
+{% endblock %}
