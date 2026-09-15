@@ -1,6 +1,11 @@
 from django.contrib import admin
-from .models import Funsonariu, Presensa, KonfigurasaunSistema, PediduLisensa, LoronFeriadu
+from .models import Funsonariu, Presensa, KonfigurasaunSistema, PediduLisensa, LoronFeriadu, ShiftServisu, PediduLembur
 
+
+@admin.register(ShiftServisu)
+class ShiftServisuAdmin(admin.ModelAdmin):
+    list_display = ('naran', 'oras_tama_hahu', 'oras_sai_lokraik')
+    search_fields = ('naran',)
 
 @admin.register(Funsonariu)
 class FunsonariuAdmin(admin.ModelAdmin):
@@ -14,11 +19,14 @@ class FunsonariuAdmin(admin.ModelAdmin):
         ('Identidade Funsonáriu', {
             'fields': ('nre', 'naran', 'foto')
         }),
-        ('Informasaun Kargu', {
-            'fields': ('kargu', 'unidade_traballu', 'grau')
+        ('Informasaun Kargu & Shift', {
+            'fields': ('kargu', 'unidade_traballu', 'grau', 'shift', 'manajer')
         }),
         ('Kontaktu', {
             'fields': ('numeru_telefoni',)
+        }),
+        ('Atributu Avansadu', {
+            'fields': ('kuota_cuti_anual', 'device_id')
         }),
         ('Estadu Kontu', {
             'fields': ('is_active', 'is_admin', 'data_tama')
@@ -49,8 +57,8 @@ class KonfigurasaunSistemaAdmin(admin.ModelAdmin):
 
 @admin.register(PediduLisensa)
 class PediduLisensaAdmin(admin.ModelAdmin):
-    list_display = ('funsonariu', 'tipu_lisensa', 'data_hahu', 'data_remata', 'estadu_pedidu')
-    list_filter = ('estadu_pedidu', 'tipu_lisensa')
+    list_display = ('funsonariu', 'tipu_lisensa', 'data_hahu', 'data_remata', 'estadu_manajer', 'estadu_pedidu')
+    list_filter = ('estadu_pedidu', 'estadu_manajer', 'tipu_lisensa')
     search_fields = ('funsonariu__naran',)
 
 
@@ -58,6 +66,12 @@ class PediduLisensaAdmin(admin.ModelAdmin):
 class LoronFeriaduAdmin(admin.ModelAdmin):
     list_display = ('data_feriadu', 'katerangan')
     ordering = ('-data_feriadu',)
+
+@admin.register(PediduLembur)
+class PediduLemburAdmin(admin.ModelAdmin):
+    list_display = ('funsonariu', 'data_lembur', 'oras_hahu', 'oras_remata', 'estadu_manajer', 'estadu_hr')
+    list_filter = ('estadu_hr', 'estadu_manajer')
+    search_fields = ('funsonariu__naran',)
 
 
 # Kustomizasaun header Django Admin

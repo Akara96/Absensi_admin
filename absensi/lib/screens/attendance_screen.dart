@@ -12,6 +12,8 @@ import '../config/app_config.dart';
 import '../services/api_service.dart';
 import '../services/offline_service.dart';
 import 'login_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
 class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({super.key});
@@ -244,7 +246,37 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         return;
       }
 
-      // 3. Jika sidik jari berhasil, cari lokasi GPS
+      // 3. Selfie & Liveness Check (Face Anti-Spoofing)
+      setState(() => _statusAbsensi = "Husu Selfie (Liveness)...");
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+      );
+
+      if (image == null) {
+        throw Exception('Selfie mak obrigatoriu hodi halo presensa!');
+      }
+
+      setState(() => _statusAbsensi = "Analiza hela oin...");
+      final inputImage = InputImage.fromFilePath(image.path);
+      final faceDetector = FaceDetector(options: FaceDetectorOptions(enableClassification: true));
+      final faces = await faceDetector.processImage(inputImage);
+      await faceDetector.close();
+
+      if (faces.isEmpty) {
+        throw Exception('La iha oin (wajah) detekta! Favor selfie fali.');
+      }
+      
+      // Basic Liveness: Check if eyes are reasonably open
+      final face = faces.first;
+      if (face.leftEyeOpenProbability != null && face.rightEyeOpenProbability != null) {
+        if (face.leftEyeOpenProbability! < 0.2 || face.rightEyeOpenProbability! < 0.2) {
+          throw Exception('Matan taka! Favor loke matan wainhira selfie (Liveness Fail).');
+        }
+      }
+
+      // 4. Jika liveness lolos, cari lokasi GPS
       setState(() => _statusAbsensi = "Haree hela Ita nia Lokalizasaun...");
 
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -286,7 +318,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         );
       }
 
-      // 4. Simpan data
+      // 5. Simpan data (upload foto could be added to API here later)
       await _submitDataAbsensi(tipuAbsensi);
     } catch (e) {
       if (!mounted) return;

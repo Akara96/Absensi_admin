@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 
 class LeaveRequestScreen extends StatefulWidget {
@@ -24,6 +25,7 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
   // Histori izin
   List<dynamic> _historiIzin = [];
   bool _isLoadingHistori = true;
+  int _kuotaCuti = 0;
 
   final _dateFormat = DateFormat('yyyy-MM-dd');
   final _displayFormat = DateFormat('d MMM yyyy');
@@ -31,7 +33,15 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
   @override
   void initState() {
     super.initState();
+    _loadKuota();
     _loadHistori();
+  }
+
+  Future<void> _loadKuota() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _kuotaCuti = prefs.getInt('kuota_cuti_anual') ?? 0;
+    });
   }
 
   Future<void> _loadHistori() async {
@@ -175,7 +185,20 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Informasaun Pedidu', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.primary)),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('Informasaun Pedidu', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.primary)),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primaryContainer,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text('Kuota Férias: $_kuotaCuti Loron', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer)),
+                                  ),
+                                ],
+                              ),
                               const SizedBox(height: 16),
 
                               // Tipe Izin

@@ -57,7 +57,7 @@ class OfflineService {
           latitude: item['latitude'],
           longitude: item['longitude'],
           distansiaMetru: item['jarak'],
-          tipeAbsen: item['tipe_absen'] ?? 'masuk',
+          tipuAbsensi: item['tipe_absen'] ?? 'masuk',
         );
         // Jika berhasil terkirim, hapus dari database lokal
         await db.delete('absensi', where: 'id = ?', whereArgs: [item['id']]);

@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import 'attendance_screen.dart';
 import 'history_screen.dart';
 import 'leave_request_screen.dart';
+import 'overtime_request_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -20,6 +21,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     const AttendanceScreen(),
     const HistoryScreen(),
     const LeaveRequestScreen(),
+    const OvertimeRequestScreen(),
   ];
 
   @override
@@ -121,6 +123,11 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             icon: Icon(Icons.file_copy_outlined),
             selectedIcon: Icon(Icons.file_copy),
             label: 'Lisensa',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.work_history_outlined),
+            selectedIcon: Icon(Icons.work_history),
+            label: 'Lembur',
           ),
         ],
       ),

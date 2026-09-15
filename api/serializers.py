@@ -1,11 +1,11 @@
 from rest_framework import serializers
-from .models import Funsonariu, Presensa, KonfigurasaunSistema, PediduLisensa
+from .models import Funsonariu, Presensa, KonfigurasaunSistema, PediduLisensa, PediduLembur
 
 
 class FunsonariuSerializer(serializers.ModelSerializer):
     class Meta:
         model = Funsonariu
-        fields = ['id', 'nre', 'naran', 'kargu', 'unidade_traballu', 'grau', 'numeru_telefoni', 'foto']
+        fields = ['id', 'nre', 'naran', 'kargu', 'unidade_traballu', 'grau', 'numeru_telefoni', 'foto', 'kuota_cuti_anual']
 
 
 class PresensaSerializer(serializers.ModelSerializer):
@@ -96,6 +96,19 @@ class PediduLisensaSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'naran_funsonariu', 'tipu_lisensa', 'tipu_lisensa_display',
             'data_hahu', 'data_remata', 'razaun', 
-            'file_evidensia', 'estadu_pedidu', 'status_display', 'tempu_pedidu'
+            'file_evidensia', 'estadu_manajer', 'estadu_pedidu', 'status_display', 'tempu_pedidu'
         ]
-        read_only_fields = ['estadu_pedidu', 'tempu_pedidu', 'funsonariu']
+        read_only_fields = ['estadu_manajer', 'estadu_pedidu', 'tempu_pedidu', 'funsonariu']
+
+class PediduLemburSerializer(serializers.ModelSerializer):
+    naran_funsonariu = serializers.CharField(source='funsonariu.naran', read_only=True)
+    status_hr_display = serializers.CharField(source='get_estadu_hr_display', read_only=True)
+    status_manajer_display = serializers.CharField(source='get_estadu_manajer_display', read_only=True)
+
+    class Meta:
+        model = PediduLembur
+        fields = [
+            'id', 'naran_funsonariu', 'data_lembur', 'oras_hahu', 'oras_remata',
+            'razaun', 'estadu_manajer', 'status_manajer_display', 'estadu_hr', 'status_hr_display', 'tempu_pedidu'
+        ]
+        read_only_fields = ['estadu_manajer', 'estadu_hr', 'tempu_pedidu', 'funsonariu']

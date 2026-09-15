@@ -10,8 +10,8 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from django.db.models import Q
 
-from .models import Funsonariu, Presensa, KonfigurasaunSistema, PediduLisensa, LoronFeriadu
-from .serializers import FunsonariuSerializer, PresensaSerializer, PresensaInputSerializer, PediduLisensaSerializer, KonfigurasaunSistemaSerializer
+from .models import Funsonariu, Presensa, KonfigurasaunSistema, PediduLisensa, LoronFeriadu, ShiftServisu, PediduLembur
+from .serializers import FunsonariuSerializer, PresensaSerializer, PresensaInputSerializer, PediduLisensaSerializer, KonfigurasaunSistemaSerializer, PediduLemburSerializer
 
 # Koordinat fatin servisu (Ezemplu: Kantor iha Dili)
 OFFICE_LAT = -8.5568
@@ -37,6 +37,7 @@ class LoginView(APIView):
     def post(self, request):
         nre = request.data.get('nre')
         password = request.data.get('password')
+        device_id = request.data.get('device_id')
 
         if not nre or not password:
             return Response({'error': 'NRE ho Password tenke priense'}, status=status.HTTP_400_BAD_REQUEST)
@@ -52,6 +53,16 @@ class LoginView(APIView):
         if not funsonariu.is_active:
             return Response({'error': 'Kontu nee la aktivu, favor kontaktu Admin'}, status=status.HTTP_403_FORBIDDEN)
 
+        # --- Device Binding Check ---
+        if device_id:
+            if not funsonariu.device_id:
+                # Lock device id
+                funsonariu.device_id = device_id
+                funsonariu.save(update_fields=['device_id'])
+            elif funsonariu.device_id != device_id:
+                return Response({'error': 'Device ID la match! Titip absen la permite.'}, status=status.HTTP_403_FORBIDDEN)
+        # ----------------------------
+
         tokens = get_tokens_for_user(funsonariu)
         return Response({
             'tokens': tokens,
@@ -59,7 +70,8 @@ class LoginView(APIView):
             'nre': funsonariu.nre,
             'kargu': funsonariu.kargu,
             'unidade_traballu': funsonariu.unidade_traballu,
-            'foto': funsonariu.foto.url if funsonariu.foto else None
+            'foto': funsonariu.foto.url if funsonariu.foto else None,
+            'kuota_cuti_anual': funsonariu.kuota_cuti_anual,
         })
 
 class AbsensiView(APIView):
@@ -83,6 +95,12 @@ class AbsensiView(APIView):
         if dist > konf.limite_raio_metru:
             return Response({'error': f'Ita boot iha liur husi raio servisu ({int(dist)}m). Favor besik ba kantór!'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # --- Multiple Shifts Support ---
+        shift = request.user.shift
+        oras_tama_remata = shift.oras_tama_remata if shift else konf.oras_tama_remata
+        oras_sai_lokraik = shift.oras_sai_lokraik if shift else konf.oras_sai_lokraik
+        # -------------------------------
+
         # 2. PROSESU PRESENSA
         presensa = Presensa.objects.filter(funsonariu=request.user, tempu_tama__date=today).first()
 
@@ -93,7 +111,7 @@ class AbsensiView(APIView):
             # Cek oráriu tama
             current_time = now.time()
             res_status = 'prezente'
-            if current_time > konf.oras_tama_remata:
+            if current_time > oras_tama_remata:
                 res_status = 'tardiu'
             
             presensa = Presensa.objects.create(
@@ -136,8 +154,8 @@ class AbsensiView(APIView):
             presensa.tempu_sai = now
             
             # Hatama Lembur se liu oráriu
-            if now.time() > konf.oras_sai_lokraik:
-                finish_dt = timezone.make_aware(datetime.combine(today, konf.oras_sai_lokraik))
+            if now.time() > oras_sai_lokraik:
+                finish_dt = timezone.make_aware(datetime.combine(today, oras_sai_lokraik))
                 diff = now - finish_dt
                 presensa.durasaun_horas_ekstra = round(diff.total_seconds() / 3600, 1)
                 if presensa.durasaun_horas_ekstra > 0.5:
@@ -255,8 +273,23 @@ class MonitorLokalizasaunView(APIView):
                 latitude=lat,
                 longitude=lng,
                 distansia_metru=dist,
-                last_status=status_absen
+                last_status=estadu_absen
             )
             return Response({'status': 'violasaun_registrada', 'message': 'Ita boot iha liur husi área kantór!'})
 
         return Response({'status': 'ok', 'message': 'Lokalizasaun seguru.'})
+
+class PengajuanLemburView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = PediduLemburSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(funsonariu=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request):
+        queryset = PediduLembur.objects.filter(funsonariu=request.user).order_by('-tempu_pedidu')
+        serializer = PediduLemburSerializer(queryset, many=True)
+        return Response(serializer.data)

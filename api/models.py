@@ -18,6 +18,24 @@ class FunsonariuManager(BaseUserManager):
         return self.create_user(nre, naran, password, **extra_fields)
 
 
+class ShiftServisu(models.Model):
+    """Model ba oráriu shift servisu (Manhã, Tarde, dll)."""
+    naran = models.CharField(max_length=100, verbose_name='Naran Shift')
+    oras_tama_hahu = models.TimeField(default='06:00:00', verbose_name='Orijem Tama Dadersan')
+    oras_tama_remata = models.TimeField(default='08:00:00', verbose_name='Limite Tama Dadersan')
+    oras_sai_deskansa = models.TimeField(default='12:00:00', verbose_name='Orijem Deskansa')
+    oras_tama_lokraik = models.TimeField(default='13:30:00', verbose_name='Orijem Tama Lokraik')
+    oras_sai_lokraik = models.TimeField(default='17:30:00', verbose_name='Orijem Sai / Fila')
+
+    class Meta:
+        db_table = 'api_shift_servisu'
+        verbose_name = 'Shift Servisu'
+        verbose_name_plural = 'Shift Servisu sira'
+
+    def __str__(self):
+        return f"{self.naran} ({self.oras_tama_hahu.strftime('%H:%M')} - {self.oras_sai_lokraik.strftime('%H:%M')})"
+
+
 class Funsonariu(AbstractBaseUser):
     """Model prinsipál ba funsonáriu / servisu-na'in instansi."""
 
@@ -37,6 +55,14 @@ class Funsonariu(AbstractBaseUser):
     )
     numeru_telefoni = models.CharField(max_length=20, blank=True, verbose_name='Númeru Telefoni')
     foto = models.ImageField(upload_to='foto_pegawai/', blank=True, null=True)
+    
+    # --- New Fields for Features ---
+    shift = models.ForeignKey(ShiftServisu, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Shift Servisu')
+    kuota_cuti_anual = models.IntegerField(default=12, verbose_name='Kuota Cuti (Loron)')
+    manajer = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='subordinados', verbose_name='Manajer/Atasan')
+    device_id = models.CharField(max_length=255, null=True, blank=True, verbose_name='Device ID (HP)')
+    # -------------------------------
+
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
     data_tama = models.DateField(auto_now_add=True)
@@ -151,7 +177,12 @@ class PediduLisensa(models.Model):
     data_remata = models.DateField(verbose_name='Data Remata')
     razaun = models.TextField(verbose_name='Razaun / Komentáriu')
     file_evidensia = models.ImageField(upload_to='bukti_izin/', verbose_name='Foto Evidénsia / Surat')
-    estadu_pedidu = models.CharField(max_length=20, choices=STATUS_PENGAJUAN_CHOICES, default='hein', verbose_name='Estadu Pedidu')
+    
+    # --- Multi-level Approval ---
+    estadu_manajer = models.CharField(max_length=20, choices=STATUS_PENGAJUAN_CHOICES, default='hein', verbose_name='Aprovamentu Manajer')
+    estadu_pedidu = models.CharField(max_length=20, choices=STATUS_PENGAJUAN_CHOICES, default='hein', verbose_name='Aprovamentu Final (HR)')
+    # ----------------------------
+    
     tempu_pedidu = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -159,6 +190,21 @@ class PediduLisensa(models.Model):
         verbose_name = 'Pedidu Lisensa'
         verbose_name_plural = 'Pedidu Lisensa sira'
         ordering = ['-tempu_pedidu']
+        
+    def save(self, *args, **kwargs):
+        # Kurangi kuota cuti jika disetujui (HR) dan tipe ferias (cuti) atau izin
+        if self.pk:
+            try:
+                old_instance = PediduLisensa.objects.get(pk=self.pk)
+                if old_instance.estadu_pedidu != 'aprova' and self.estadu_pedidu == 'aprova':
+                    if self.tipu_lisensa in ['ferias', 'lisensa']:
+                        durasaun = (self.data_remata - self.data_hahu).days + 1
+                        if durasaun > 0 and self.funsonariu.kuota_cuti_anual >= durasaun:
+                            self.funsonariu.kuota_cuti_anual -= durasaun
+                            self.funsonariu.save()
+            except PediduLisensa.DoesNotExist:
+                pass
+        super().save(*args, **kwargs)
 
 
 class LoronFeriadu(models.Model):
@@ -193,3 +239,31 @@ class ViolaLokalizasaun(models.Model):
 
     def __str__(self):
         return f"{self.funsonariu.naran} - {self.tempu.strftime('%H:%M')} ({self.distansia_metru:.1f}m)"
+
+class PediduLembur(models.Model):
+    """Model ba pedidu horas ekstra (Overtime)."""
+    STATUS_CHOICES = [
+        ('hein', 'Hein (Pending)'),
+        ('aprova', 'Aprova (Approved)'),
+        ('rejeita', 'Rejeita (Rejected)'),
+    ]
+    
+    funsonariu = models.ForeignKey(Funsonariu, on_delete=models.CASCADE, related_name='pedidu_lembur', verbose_name='Funsonáriu')
+    data_lembur = models.DateField(verbose_name='Data Lembur')
+    oras_hahu = models.TimeField(verbose_name='Oras Hahu')
+    oras_remata = models.TimeField(verbose_name='Oras Remata')
+    razaun = models.TextField(verbose_name='Razaun / Tarefa')
+    
+    estadu_manajer = models.CharField(max_length=20, choices=STATUS_CHOICES, default='hein', verbose_name='Aprovamentu Manajer')
+    estadu_hr = models.CharField(max_length=20, choices=STATUS_CHOICES, default='hein', verbose_name='Aprovamentu Final (HR)')
+    
+    tempu_pedidu = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'api_pedidu_lembur'
+        verbose_name = 'Pedidu Lembur'
+        verbose_name_plural = 'Pedidu Lembur sira'
+        ordering = ['-data_lembur', '-tempu_pedidu']
+        
+    def __str__(self):
+        return f"Lembur: {self.funsonariu.naran} ({self.data_lembur})"

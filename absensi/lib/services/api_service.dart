@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/app_config.dart';
 
@@ -28,11 +30,13 @@ class ApiService {
     required String token,
     required String naran,
     required String nre,
+    required int kuotaCuti,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await _storage.write(key: 'jwt_token', value: token);
     await prefs.setString('naran_funsonariu', naran);
     await prefs.setString('nre_funsonariu', nre);
+    await prefs.setInt('kuota_cuti_anual', kuotaCuti);
     await prefs.setBool('is_logged_in', true);
   }
 
@@ -87,19 +91,41 @@ class ApiService {
     await _storage.delete(key: 'bio_enabled');
   }
 
+  static Future<String?> _getDeviceId() async {
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        return androidInfo.id;
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        return iosInfo.identifierForVendor;
+      }
+    } catch (e) {
+      debugPrint('Falla foti device ID: $e');
+    }
+    return null;
+  }
+
   static Future<String> login(String nre, String password) async {
     try {
+      final deviceId = await _getDeviceId();
       final response = await _dio.post(
         AppConfig.loginEndpoint,
-        data: {'nre': nre, 'password': password},
+        data: {
+            'nre': nre, 
+            'password': password,
+            if (deviceId != null) 'device_id': deviceId,
+        },
       );
 
       if (response.statusCode == 200) {
         final data = response.data;
         final token = (data['token'] ?? data['tokens']?['access']) as String;
         final naran = data['naran_funsonariu'] as String? ?? data['naran'] as String? ?? 'Funsonáriu';
+        final kuotaCuti = data['kuota_cuti_anual'] as int? ?? 0;
 
-        await _saveSession(token: token, naran: naran, nre: nre);
+        await _saveSession(token: token, naran: naran, nre: nre, kuotaCuti: kuotaCuti);
         return naran;
       } else {
         throw Exception('Login fali. Favor haree fali NRE ho password Ita Boot nian.');
@@ -325,6 +351,59 @@ class ApiService {
     } catch (e) {
       // Kita silent error untuk monitoring agar tidak mengganggu UI
       debugPrint("Error monitor lokalizasaun: $e");
+    }
+  }
+
+  /// Kirim permohonan lembur
+  static Future<void> submitLembur({
+    required String dataLembur,
+    required String orasHahu,
+    required String orasRemata,
+    required String razaun,
+  }) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Sesaun la válidu. Favor tama fali.');
+
+    try {
+      final response = await _dio.post(
+        'lembur/', 
+        data: {
+          'data_lembur': dataLembur,
+          'oras_hahu': orasHahu,
+          'oras_remata': orasRemata,
+          'razaun': razaun,
+        },
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+
+      if (response.statusCode != 201) {
+        throw Exception('Fali haruka pedidu lembur.');
+      }
+    } on DioException catch (e) {
+      String errorMessage = 'Fali haruka pedidu';
+      if (e.response?.data != null && e.response?.data is Map) {
+        errorMessage = (e.response?.data as Map).values.join(', ');
+      }
+      throw Exception(errorMessage);
+    }
+  }
+
+  /// Ambil riwayat lembur
+  static Future<List<dynamic>> getHistoriLembur() async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Sesaun la válidu.');
+
+    try {
+      final response = await _dio.get(
+        'lembur/histori/',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      if (response.statusCode == 200) {
+        return response.data as List<dynamic>;
+      }
+      return [];
+    } on DioException catch (e) {
+      throw Exception('Fali foti história lembur: ${e.message}');
     }
   }
 }

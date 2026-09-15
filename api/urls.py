@@ -19,6 +19,10 @@ urlpatterns = [
     path('izin/', views.PengajuanIzinView.as_view(), name='submit_izin'),
     path('izin/histori/', views.PengajuanIzinView.as_view(), name='histori_izin'),
 
+    # Pedidu Lembur
+    path('lembur/', views.PengajuanLemburView.as_view(), name='submit_lembur'),
+    path('lembur/histori/', views.PengajuanLemburView.as_view(), name='histori_lembur'),
+
     # Monitoring
     path('monitor_lokalizasaun/', views.MonitorLokalizasaunView.as_view(), name='api_monitor_lokalizasaun'),
 
